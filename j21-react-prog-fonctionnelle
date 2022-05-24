@@ -1,0 +1,198 @@
+# Programmation fonctionnelle (PF)
+
+## Programmation impérative
+
+<https://librecours.net/module/js/js02/pres/co/imperative.html?mode=html>
+
+La programmation impérative permet de donner des instructions précises à une machine et modifie son état global.
+
+Les langages les plus connus partagent un aspect impératif.
+
+## Programmation fonctionnelle - définition
+
+<https://librecours.net/module/js/js02/pres/co/fonctionnelle.html?mode=html>
+
+C'est un dérivé de la programmation déclarative, ainsi on n'y retrouve pas d'état. Les données ne peuvent être manipulées que par des évaluations de fonctions mathématiques.
+
+Le manque d'état induit une absence d'opération d'affectation. Cela permet aussi d'éviter tout effet de bord et permet de voir le programme comme une véritable application mathématique. Si un bug apparaît, il est très simple à repérer car il se trouve forcément dans la fonction ne présentant pas le résultat voulu. En effet, il n'y a pas de variables partagées ou d'état global.
+
+Autrement dit, un langage fonctionnel offre la possibilité de passer par des fonctions pour atteindre le résultat voulu. Ces fonctions renverront toujours le même résultat pour les mêmes données en entrées sans modifier l'état potentiel qui se trouve à l'extérieur de ces fonctions.
+
+## Fonctions pures
+
+Un des principes de base de la PF est d’éviter les effets de bord. C’est à dire qu’une fonction ne doit pas modifier des choses en dehors de son propre scope (sa portée), tel qu’accéder ou modifier une variable extérieure à elle-même.
+
+Cela permet de rendre le code plus prévisible car à sa lecture, il est immédiatement possible d’identifier les causes et les effets.
+
+Une fonction qui modifie des variables non locales doit être lue dans son intégralité pour savoir ce qu’elle fait et il est difficile d’en connaitre l’impact réel (quelles autres fonctions dépendent/touchent à ces variables ?).
+
+Une fonction pure prend donc une ou des valeurs en arguments et retourne une valeur qui est prédictible : si on lui donne les même arguments, le résultat sera toujours le même.
+
+```js
+// fonction pure
+function add(a, b) {
+  return a + b;
+}
+
+// fonction « impure »
+const a = { value: 1 }; // ici a.value pourrait être modifié par une autre partie du programme
+function addToA(b) {
+  return a.value + b;
+}
+```
+
+```js
+let userAge = 20;
+// cette fonction est impure
+function addYear() {
+  userAge += 1;
+}
+
+addYear();
+console.log(userAge); // 21
+```
+
+pourrait être transformée en fonction pure :
+
+```js
+const userAge = 20;
+// cette fonction est pure
+function addYear(userAge) {
+  return userAge + 1;
+}
+
+console.log(addYear(userAge)); // 21
+console.log(addYear(userAge)); // 21
+console.log(userAge);
+```
+
+## Immutabilité
+
+En PF, il n’y a pas de variables à proprement parler. Lorsqu’une variable prend une valeur, elle ne doit plus changer.
+
+En PF, on ne modifie jamais une variable après sa déclaration. Pourtant, un programme dans lequel il n’y a aucun changement de valeurs ne fait pas grand chose… Comment fait-on pour tracker les changements de valeurs dans un programme alors ? En PF, chaque nouvelle valeur se voit attribuer une nouvelle variable.
+
+On a vu apparaître en ES2015 le mot-clef const, spécifiant que la variable déclarée est une constante. Ainsi, si l’on fait const age = 10; puis plus loin, age = 11;, le moteur JavaScript refusera de modifier la constante et lèvera une erreur. Le fonctionnement est similaire avec les chaînes de caractères.
+
+Cependant, les tableaux et les objets ne fonctionnent pas tout à fait de la même manière.
+
+Cela nous oblige :
+
+- ne pas utiliser `let` (et encore moins `var`)
+- ne pas utiliser les fonctions « mutator » = fonctions qui modifie la valeur de la variable → `array.push()`
+
+```js
+const users = ['Jane', 'John'];
+users.push('Mark'); // on modifie `users` → interdit en PF
+
+// en PF, on fera
+const newUsers = [...users, 'Mark'];
+```
+
+en React, la gestion du state en est un parfait exemple :
+
+```js
+// @file Pages/Artist.js
+const details = await getArtistDetails(artistId);
+// le `array.map()` respecte le principe d'immutabilité
+const albumsInArray = details.albums.split("\n").map((album) => (
+  album.trim()
+));
+// on ne modifie pas `details` directement : on passe par la SPREAD syntax pour créer un nouvel objet
+setArtist({
+  ...details,
+  albums: albumsInArray,
+});
+```
+
+Quelques fonctions/instructions à bannir :
+
+- array.push
+- array.sort
+- array.pop
+
+- for (const i; i < 5; i++) {}
+- for...in
+- for...of
+
+Quelques fonctions à utiliser :
+
+- array.map
+- array.filter
+- array.find
+
+> certaines librairies « transforme » JS en langage immutable : [Immutable.js](https://immutable-js.com/)
+
+## Fonction d'ordre supérieur (Higher-Order Functions)
+
+> Les fonctions d’ordre supérieur sont des fonctions qui ont au moins une des propriétés suivantes :
+>
+> - elles prennent une ou plusieurs fonctions en entrée ;
+> - elles renvoient une fonction.
+>
+> _Wikipedia_
+
+```js
+array.map(() => {}); // fonction anonyme utilisée en argument s'appelle une « lambda »
+
+function doThing() {
+  return 'x';
+}
+array.map(doThing);
+```
+
+```js
+function doOther(param, callback) {
+  // make thing
+  return callback();
+}
+```
+
+## Fonction composée
+
+La logique de ne pas se répéter est centrale en programmation et encore plus en programmation fonctionnelle. Tel que nous l’avons vu avec les fonctions d’ordre supérieur, utilisées pour construire des fonctions plus spécifiques afin de ne pas se répéter. C’est également ce que nous allons faire avec la composition de fonctions.
+
+Il faut voir nos fonctions comme des briques de Lego. Une fonction simple qui ne fait qu’une chose aura plus de chance d’être réutilisée qu’une fonction complexe qui ne sert que dans un cas particulier.
+
+```js
+const users = [
+  { name: "Jeff", age: 14 },
+  { name: "Jack", age: 18 }, 
+  { name: "Milady", age: 22 },
+];
+const filter = (cb, arr) => arr.filter(cb);
+const map = (cb, arr) => arr.map(cb);
+
+map(u => u.name, filter(u => u.age >= 18, users)); //["Jack", "Milady"]
+```
+
+## curryfication
+
+<https://fr.javascript.info/currying-partials>
+
+Le currying, ou curryfication en français. Wikipedia définit la curryfication comme suit.
+
+> En programmation fonctionnelle, la curryfication désigne la transformation d’une fonction à plusieurs arguments en une fonction à un argument qui retourne une fonction sur le reste des arguments.
+>
+> _Wikipedia_
+
+```js
+function curry(f) { // curry(f) fait la curryfication
+  return function(a) {
+    return function(b) {
+      return f(a, b);
+    };
+  };
+}
+
+// usage
+function sum(a, b) {
+  return a + b;
+}
+
+let curriedSum = curry(sum);
+
+alert( curriedSum(1)(2) );
+```
+
+
